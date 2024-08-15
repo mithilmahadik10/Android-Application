@@ -1,0 +1,105 @@
+package com.example.wms3;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import android.annotation.SuppressLint;
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.os.Bundle;
+import android.service.autofill.FillEventHistory;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.Toast;
+
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.firestore.DocumentChange;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QuerySnapshot;
+
+import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+public class rclothes extends AppCompatActivity {
+
+    RecyclerView recyclerView;
+    ArrayList<clothes> clothesArrayList;
+    cadapter cadapter;
+    ImageButton btn1;
+    FirebaseFirestore db;
+    ProgressDialog progressDialog;
+
+
+    @SuppressLint("MissingInflatedId")
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_rclothes);
+        btn1 = findViewById(R.id.btn1);
+        btn1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(getApplicationContext(), receiver.class);
+                startActivity(intent);
+                finish();
+            }
+        });
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setCancelable(false);
+        progressDialog.setMessage("Fetching Data.....");
+        progressDialog.show();
+
+        recyclerView = findViewById(R.id.rrc);
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        db = FirebaseFirestore.getInstance();
+        clothesArrayList = new ArrayList<clothes>();
+        cadapter = new cadapter(rclothes.this, clothesArrayList);
+
+        recyclerView.setAdapter(cadapter);
+
+        EventChangeListener();
+
+    }
+    private void EventChangeListener() {
+
+        db.collection("sclothes").orderBy("Time", Query.Direction.ASCENDING)
+                .addSnapshotListener(new EventListener<QuerySnapshot>() {
+                    @Override
+                    public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
+                        if (error != null){
+
+                            if(progressDialog.isShowing())
+                                progressDialog.dismiss();
+
+                            Log.e("FireStore error",error.getMessage());
+                            return;
+                        }
+
+                        for (DocumentChange dc : value.getDocumentChanges()){
+
+                            if(dc.getType()==DocumentChange.Type.ADDED){
+                                clothesArrayList.add(dc.getDocument().toObject(clothes.class));
+                            }
+                            cadapter.notifyDataSetChanged();
+                            if(progressDialog.isShowing())
+                                progressDialog.dismiss();
+                        }
+                    }
+                });
+    }
+}
