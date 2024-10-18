@@ -1,1 +1,1 @@
-# Android-Application
+This is a Donation Application. In this Application there are two type of users 1)Supplier 2)Receiver. Suppliers are the Restaurants or normal people who are willing to donate things like clothes, Food, etc. This application is connected to firebase database for storage of user.
